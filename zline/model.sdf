@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="zline">
+    <static>false</static>
+    <link name="box">
+      <pose>0 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+             <radius>0.015</radius>
+             <length>0.25</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+             <radius>0.015</radius>
+             <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://turtlebot3_autorace/zline/materials/scripts</uri>
+            <uri>model://turtlebot3_autorace/zline/materials/textures</uri>
+            <name>zline</name>
+          </script>
+        </material>
+      </visual>
+    </link>    
+  </model>
+</sdf>
