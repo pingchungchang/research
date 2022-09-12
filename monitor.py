@@ -47,17 +47,11 @@ def getpoint(I,p1,p2):
 	bb = (xx1*cc2-xx2*cc1)/det
 	return [aa,bb]
 def findpink(img):
-	pre = img
 	global x1,x2,y1,y2,z1,z2,m1,m2,now,pre,M,monitor_pos,ks
 	hsv = cv.cvtColor(img,cv.COLOR_BGR2HSV)
-	# dark_yellow = np.array([30,255,255])
-	# light_yellow = np.array([25,55,55])
-	# dark_white = np.array([255,0,255])
-	# light_white = np.array([0,0,179])
 	dark_pink = np.array([165,255,255])
 	light_pink = np.array([140,53,55])
 	mask = cv.inRange(hsv,light_pink,dark_pink)
-	# output = cv.bitwise_and(img,img,mask = mask)
 	pinks = cv.findContours(mask,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
 	pinks = imutils.grab_contours(pinks)
 	centers = []
@@ -136,30 +130,56 @@ def findpink(img):
 	return
 
 def initial(inp):
+	global pre,now
 	bridge = CvBridge()
 	try:
 		img = bridge.imgmsg_to_cv2(inp,'bgr8')
-		# return
 		findpink(img)
-		# cv.imshow('test',img)
-		# cv.waitKey(2)
+		now = img
+		pre = img
+		# rospy.loginfo(type(now))
+
 	except CvBridgeError:
 		rospy.loginfo('error')
 
-def cmp(inp)
+def cmpp(inp):
+	global pre,now
+	# return
+	bridge = CvBridge()
+	img = bridge.imgmsg_to_cv2(inp,'bgr8')
+	# rospy.loginfo("A: "+str(type(now)))
+	# rospy.loginfo(type(pre))
+	pre = now
+	now = img
+	# return
+	diff = cv.absdiff(pre,now)
+	gray = cv.cvtColor(diff,cv.COLOR_BGR2GRAY)
+	blur = cv.GaussianBlur(gray,(5,5),0)
+	_,thresh = cv.threshold(blur,20,255,cv.THRESH_BINARY)
+	dilated = cv.dilate(thresh,None, iterations = 3)
+	_,contours,_ = cv.findContours(dilated,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+	out = pre
+	for c in contours:
+		(x,y,w,h) = cv.boundingRect(c)
+		if cv.contourArea(c)<150:
+			continue
+		cv.rectangle(pre,(x,y),(x+w,y+h),(255,0,0),3)
+		out = pre
+	cv.imshow('now',out)
+	cv.waitKey(10)
+	pre = now
+	return
 
 
 
 def fil(inp):
 	global flag,pre,now
-	pre = now
-	now = inp
 	if flag == False:
 		initial(inp)
 		flag = True
 		return
 	else:
-		cmp(inp)
+		cmpp(inp)
 	return
 if __name__ == '__main__':
 	flag = False

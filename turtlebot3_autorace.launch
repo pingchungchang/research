@@ -20,6 +20,10 @@
   <param name="monitor" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/newbot.urdf.xacro" />
   <node pkg="gazebo_ros" type="spawn_model" name="spawn_newbot" args="-urdf -model newbot -x 0 -y -1.25 -z 3.0 -param monitor" />
 
+  <param name="movingbot" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/movingbot.urdf.xacro" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_movingbot" args="-urdf -model movingbot -x 1 -y -1.25 -z 1.0 -param movingbot" />
+
+
 </launch>
 
 
