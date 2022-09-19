@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import imutils
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge,CvBridgeError
-
+from std_msgs.msg import Float64MultiArray
 flag = False
 
 pre = []
@@ -27,6 +27,14 @@ z1 = []
 z2 = []
 ks = []
 monitor_pos = []
+pub = rospy.Publisher('barrier_coords',Float64MultiArray)
+def sendcoord(inp):
+	# global ks
+	# rospy.loginfo(ks)
+	msg = Float64MultiArray()
+	msg.data = inp
+	pub.publish(msg)
+
 def solve_eq(eq1,eq2):
 	# rospy.loginfo(eq1)
 	# rospy.loginfo(eq2)
@@ -35,7 +43,7 @@ def solve_eq(eq1,eq2):
 	# rospy.loginfo(tt)
 	return [tt[0][0],tt[1][0]]
 def getpoint(I,p1,p2):
-	global M
+	global M,ks
 	xx1 = M[0,p1]+(1-ks[p1])*I[0]
 	yy1 = M[0,p2]+(1-ks[p2])*I[0]
 	xx2 = M[1,p1]+(1-ks[p1])*I[1]
@@ -45,6 +53,7 @@ def getpoint(I,p1,p2):
 	det = xx1*yy2-xx2*yy1
 	aa = (yy2*cc1-yy1*cc2)/det
 	bb = (xx1*cc2-xx2*cc1)/det
+	rospy.loginfo(ks)
 	return [aa,bb]
 def findpink(img):
 	global x1,x2,y1,y2,z1,z2,m1,m2,now,pre,M,monitor_pos,ks
@@ -56,10 +65,10 @@ def findpink(img):
 	pinks = imutils.grab_contours(pinks)
 	centers = []
 	for c in pinks:
-		M = cv.moments(c)
+		MM = cv.moments(c)
 		# rospy.loginfo(M["m00"])
-		cX = int(M["m10"]/(M["m00"]+0.00001))
-		cY = int(M["m01"]/(M['m00']+0.00001))
+		cX = int(MM["m10"]/(MM["m00"]+0.00001))
+		cY = int(MM["m01"]/(MM['m00']+0.00001))
 		if([cX,cY] != [0,0]):
 			centers.append([cX,cY])
 		# cv.circle(mask,(cX,cY),2,(255,255,255),2)
@@ -115,7 +124,7 @@ def findpink(img):
 	ks = [k1,k2,k3]
 	M = m1.dot(np.array([[1,0,0,0],[0,k1,0,0],[0,0,k2,0],[0,0,0,k3]]))
 	M = M.dot(np.array([[-1,-1,-1,1],[1,0,0,0],[0,1,0,0],[0,0,1,0]]))
-	rospy.loginfo(len(M[0,:]))
+	# rospy.loginfo(len(M[0,:]))
 	y_to_xz = y1
 	z_to_xy = z1
 	tmp = getpoint(y_to_xz,0,2)
@@ -127,6 +136,7 @@ def findpink(img):
 	cv.imshow('testing',mask)
 	cv.waitKey(2)
 	rospy.loginfo('done')
+	rospy.loginfo(ks)
 	return
 
 def initial(inp):
@@ -143,7 +153,7 @@ def initial(inp):
 		rospy.loginfo('error')
 
 def cmpp(inp):
-	global pre,now
+	global pre,now,ks
 	# return
 	bridge = CvBridge()
 	img = bridge.imgmsg_to_cv2(inp,'bgr8')
@@ -159,12 +169,20 @@ def cmpp(inp):
 	dilated = cv.dilate(thresh,None, iterations = 3)
 	_,contours,_ = cv.findContours(dilated,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
 	out = pre
+	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<150:
+		if cv.contourArea(c)<175:
 			continue
 		cv.rectangle(pre,(x,y),(x+w,y+h),(255,0,0),3)
+		coords.append(x+w//2)
+		coords.append(y+h)
+		kk = getpoint([coords[-2],coords[-1]],0,1)
+		coords[-2] = int(kk[0])
+		coords[-1] = (kk[1])
 		out = pre
+	rospy.loginfo(coords)
+	sendcoord(coords)
 	cv.imshow('now',out)
 	cv.waitKey(10)
 	pre = now
