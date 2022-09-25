@@ -14,6 +14,8 @@ from cv_bridge import CvBridge,CvBridgeError
 from std_msgs.msg import Float64MultiArray
 flag = False
 
+
+route = np.zeros((1000,1000,1),dtype = 'uint8')
 pre = []
 now = []
 M = []
@@ -29,6 +31,7 @@ ks = []
 monitor_pos = []
 pub = rospy.Publisher('barrier_coords',Float64MultiArray)
 def sendcoord(inp):
+	global pub
 	# global ks
 	# rospy.loginfo(ks)
 	msg = Float64MultiArray()
@@ -53,7 +56,6 @@ def getpoint(I,p1,p2):
 	det = xx1*yy2-xx2*yy1
 	aa = (yy2*cc1-yy1*cc2)/det
 	bb = (xx1*cc2-xx2*cc1)/det
-	rospy.loginfo(ks)
 	return [aa,bb]
 def findpink(img):
 	global x1,x2,y1,y2,z1,z2,m1,m2,now,pre,M,monitor_pos,ks
@@ -75,25 +77,24 @@ def findpink(img):
 	# centers.remove([0,0])
 	# centers.remove([0,0])
 	centers.sort()
-	z2 = centers[0]
+	y2 = centers[0]
 	centers.pop(0)
-	z1 = centers[0]
+	y1 = centers[0]
 	centers.pop(0)
 	for i in range(len(centers)):
 		centers[i] = [centers[i][1],centers[i][0]]
 	centers.sort()
 	# rospy.loginfo(len(centers))
-	y2 = [centers[0][1],centers[0][0]]
+	z2 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
-	y1 = [centers[0][1],centers[0][0]]
+	z1 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
 	centers.sort(reverse = True)
 	x2 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
 	x1 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
-	# cv.circle(mask,(y2[0],y2[1]),2,(255,255,255),5)
-
+	rospy.loginfo(y2)
 	# rospy.loginfo(centers)
 	# for i in centers:
 		# rospy.loginfo(len(i))
@@ -102,6 +103,7 @@ def findpink(img):
 	# y2,x2 = x2,y2
 	e2 = [(x2[1]-x1[1])/float(x2[0]-x1[0]),-1,-x2[1]+x2[0]*float(x2[1]-x1[1])/(x2[0]-x1[0])]
 	O = solve_eq(e1,e2)
+	cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
 	for i in range(len(O)):
 		O[i] = int(O[i])
 	# rospy.loginfo(O)
@@ -133,7 +135,9 @@ def findpink(img):
 	line2 = [[0,0,1],[tmp[0],tmp[1],-1]]
 	k = 1/(line1[1][0]*line2[1][1]/line2[1][0]-line1[1][1])
 	monitor_pos = [1,0,0]+k*line1[1][1]
+	# cv.imshow('testing',mask)
 	cv.imshow('testing',mask)
+	rospy.loginfo(mask)
 	cv.waitKey(2)
 	rospy.loginfo('done')
 	rospy.loginfo(ks)
@@ -153,7 +157,7 @@ def initial(inp):
 		rospy.loginfo('error')
 
 def cmpp(inp):
-	global pre,now,ks
+	global pre,now,ks,route
 	# return
 	bridge = CvBridge()
 	img = bridge.imgmsg_to_cv2(inp,'bgr8')
@@ -172,22 +176,32 @@ def cmpp(inp):
 	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<175:
+		if cv.contourArea(c)<130:
 			continue
 		cv.rectangle(pre,(x,y),(x+w,y+h),(255,0,0),3)
 		coords.append(x+w//2)
 		coords.append(y+h)
 		kk = getpoint([coords[-2],coords[-1]],0,1)
-		coords[-2] = int(kk[0])
+		coords[-2] = (kk[0])
 		coords[-1] = (kk[1])
 		out = pre
+	for i in range(0,len(coords),2):
+		cv.circle(route,(int(coords[i]*20)+600,int(coords[i+1]*20)+600),2,(255,255,255),5)
 	rospy.loginfo(coords)
+	if len(coords) != 0 and coords[0]<0:
+		rospy.loginfo('stop!')
+		exit()
 	sendcoord(coords)
+	# getpoint()
+	# cv.imshow('tmp',route)
 	cv.imshow('now',out)
 	cv.waitKey(10)
 	pre = now
 	return
-
+'''
+  <param name="movingbot2" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/movingbot.urdf.xacro" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_movingbot2" args="-urdf -model movingbot2 -x 9 -y -1.5 -z 1.0 -param movingbot2" />
+'''
 
 
 def fil(inp):
