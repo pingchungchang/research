@@ -28,6 +28,7 @@ y2 = []
 z1 = []
 z2 = []
 ks = []
+global disappearing_point
 monitor_pos = []
 pub = rospy.Publisher('barrier_coords',Float64MultiArray)
 def sendcoord(inp):
@@ -57,8 +58,10 @@ def getpoint(I,p1,p2):
 	aa = (yy2*cc1-yy1*cc2)/det
 	bb = (xx1*cc2-xx2*cc1)/det
 	return [aa,bb]
+def find_line(a,b):
+	return [(b[1]-a[1])/(a[0]-b[0]),1,a[1]-a[0]*(a[1]-b[1])/(a[0]-b[0])]
 def findpink(img):
-	global x1,x2,y1,y2,z1,z2,m1,m2,now,pre,M,monitor_pos,ks
+	global x1,x2,y1,y2,z1,z2,m1,m2,now,pre,M,monitor_pos,ks,disappearing_point
 	hsv = cv.cvtColor(img,cv.COLOR_BGR2HSV)
 	dark_pink = np.array([165,255,255])
 	light_pink = np.array([140,53,55])
@@ -103,7 +106,7 @@ def findpink(img):
 	# y2,x2 = x2,y2
 	e2 = [(x2[1]-x1[1])/float(x2[0]-x1[0]),-1,-x2[1]+x2[0]*float(x2[1]-x1[1])/(x2[0]-x1[0])]
 	O = solve_eq(e1,e2)
-	cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
+	# cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
 	for i in range(len(O)):
 		O[i] = int(O[i])
 	# rospy.loginfo(O)
@@ -136,8 +139,17 @@ def findpink(img):
 	k = 1/(line1[1][0]*line2[1][1]/line2[1][0]-line1[1][1])
 	monitor_pos = [1,0,0]+k*line1[1][1]
 	# cv.imshow('testing',mask)
+
+	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
+	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
+	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
+	rospy.loginfo(str(x110)+','+str(y110))
+	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(O,x1))
+	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
+	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,255),4)
+	# cv.circle(mask,(int(disappearing_point[0]),int(1)),2,(255,255,255),4)
+
 	cv.imshow('testing',mask)
-	rospy.loginfo(mask)
 	cv.waitKey(2)
 	rospy.loginfo('done')
 	rospy.loginfo(ks)
@@ -152,12 +164,10 @@ def initial(inp):
 		now = img
 		pre = img
 		# rospy.loginfo(type(now))
-
 	except CvBridgeError:
 		rospy.loginfo('error')
-
 def cmpp(inp):
-	global pre,now,ks,route
+	global pre,now,ks,route,disappearing_point
 	# return
 	bridge = CvBridge()
 	img = bridge.imgmsg_to_cv2(inp,'bgr8')
@@ -176,7 +186,9 @@ def cmpp(inp):
 	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<130:
+		if cv.contourArea(c)<150:
+			continue
+		if y+h<disappearing_point[1]:
 			continue
 		cv.rectangle(pre,(x,y),(x+w,y+h),(255,0,0),3)
 		coords.append(x+w//2)
@@ -188,9 +200,6 @@ def cmpp(inp):
 	for i in range(0,len(coords),2):
 		cv.circle(route,(int(coords[i]*20)+600,int(coords[i+1]*20)+600),2,(255,255,255),5)
 	rospy.loginfo(coords)
-	if len(coords) != 0 and coords[0]<0:
-		rospy.loginfo('stop!')
-		exit()
 	sendcoord(coords)
 	# getpoint()
 	# cv.imshow('tmp',route)
