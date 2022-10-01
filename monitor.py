@@ -15,7 +15,7 @@ from std_msgs.msg import Float64MultiArray
 flag = False
 
 
-route = np.zeros((1000,1000,1),dtype = 'uint8')
+route = np.zeros((1000,1000,3),dtype = 'uint8')
 pre = []
 now = []
 M = []
@@ -28,7 +28,7 @@ y2 = []
 z1 = []
 z2 = []
 ks = []
-global disappearing_point
+disappearing_point = []
 monitor_pos = []
 pub = rospy.Publisher('barrier_coords',Float64MultiArray)
 def sendcoord(inp):
@@ -145,6 +145,7 @@ def findpink(img):
 	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
 	rospy.loginfo(str(x110)+','+str(y110))
 	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(O,x1))
+	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
 	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
 	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,255),4)
 	# cv.circle(mask,(int(disappearing_point[0]),int(1)),2,(255,255,255),4)
@@ -198,11 +199,12 @@ def cmpp(inp):
 		coords[-1] = (kk[1])
 		out = pre
 	for i in range(0,len(coords),2):
-		cv.circle(route,(int(coords[i]*20)+600,int(coords[i+1]*20)+600),2,(255,255,255),5)
+		cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
 	rospy.loginfo(coords)
 	sendcoord(coords)
 	# getpoint()
 	# cv.imshow('tmp',route)
+	cv.circle(out,(int(disappearing_point[0]),int(disappearing_point[1])),2,(0,255,0),4)
 	cv.imshow('now',out)
 	cv.waitKey(10)
 	pre = now
@@ -211,8 +213,6 @@ def cmpp(inp):
   <param name="movingbot2" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/movingbot.urdf.xacro" />
   <node pkg="gazebo_ros" type="spawn_model" name="spawn_movingbot2" args="-urdf -model movingbot2 -x 9 -y -1.5 -z 1.0 -param movingbot2" />
 '''
-
-
 def fil(inp):
 	global flag,pre,now
 	if flag == False:
@@ -222,6 +222,9 @@ def fil(inp):
 	else:
 		cmpp(inp)
 	return
+
+
+
 if __name__ == '__main__':
 	flag = False
 	rospy.init_node('monitor1',anonymous = True)
