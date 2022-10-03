@@ -187,7 +187,7 @@ def cmpp(inp):
 	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<150:
+		if cv.contourArea(c)<100:
 			continue
 		if y+h<disappearing_point[1]:
 			continue

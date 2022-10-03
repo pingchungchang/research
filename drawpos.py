@@ -13,13 +13,15 @@ def draw_pos(inp):
 	rospy.loginfo([pos[0]-1,pos[1]+1])
 	pos = [-pos[0]*10,pos[1]*10]
 	cv.circle(canva,(int(pos[0])+500,int(pos[1])+500),2,(255,255,0),4)
-	cv.imshow('position map',route+canva)
-	cv.waitKey(10)
 	return
 
 def draw_bar(inp):
 	for i in range(0,len(inp.data),2):
-		cv.circle(route,(int(inp.data[i]*10)+500,int(inp.data[i+1]*10)+500),2,(255,0,255),4)
+		pp = (int(inp.data[i]*10)+500,int(inp.data[i+1]*10)+500)
+		if pp[0]<1000 and pp[1]<1000 and pp[0]>=0 and pp[1]>=0:
+			cv.circle(route,pp,2,(255,0,255),4)
+	cv.imshow('position map',route+canva)
+	cv.waitKey(10)
 if __name__ == "__main__":
 	rospy.init_node('odom_drawer')
 	rospy.Subscriber('/movbot_odom',Odometry,draw_pos,queue_size = 100)
