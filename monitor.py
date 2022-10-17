@@ -111,7 +111,7 @@ def findpink(img):
 		O[i] = int(O[i])
 	# rospy.loginfo(O)
 	# cv.line(mask,(y2[0],y2[1]),(O[0],O[1]),(255,255,255),4)
-	# cv.circle(mask,(O[0],O[1]),2,(255,255,255),5)
+	# cv.circle(mask,(x1[0],x1[1]),2,(255,255,255),9)
 	
 	m1 = [[O[0],x1[0],y1[0],z1[0]],[O[1],x1[1],y1[1],z1[1]],[1,1,1,1]]
 	m1 = np.array(m1)
@@ -142,10 +142,16 @@ def findpink(img):
 
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
-	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
+	# cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
 	rospy.loginfo(str(x110)+','+str(y110))
 	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(O,x1))
 	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
+	oxline = find_line([x110,y110],y1)
+	oyline = find_line(O,x1)
+	cv.line(mask,(int(x110),int(y110)),(int(oxline[2]/oxline[0]),0),(255,255,0),2)
+	cv.line(mask,(x1[0],x1[1]),(int(oyline[2]/oyline[0]),0),(255,255,0),2)
+	# cv.line(mask,(O[0],O[1]),((O[0]-O[1]*(O[1]-x1[1])/(O[0]-x1[0])*O[1]),0),(255,255,0),3)
+	rospy.loginfo(int(oxline[2]/oxline[0]))
 	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
 	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,255),4)
 	# cv.circle(mask,(int(disappearing_point[0]),int(1)),2,(255,255,255),4)
@@ -153,7 +159,7 @@ def findpink(img):
 	cv.imshow('testing',mask)
 	cv.waitKey(2)
 	rospy.loginfo('done')
-	rospy.loginfo(ks)
+	rospy.loginfo(ks)	
 	return
 
 def initial(inp):
@@ -187,7 +193,7 @@ def cmpp(inp):
 	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<100:
+		if cv.contourArea(c)<125:
 			continue
 		if y+h<disappearing_point[1]:
 			continue

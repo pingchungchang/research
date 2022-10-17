@@ -4,21 +4,26 @@ import rospy
 import numpy as np
 from nav_msgs.msg import Odometry
 from std_msgs.msg import *
-canva = np.zeros((1000,1000,3),dtype = 'uint8')
+mul = 5
+shif = 250
+canva = np.zeros((shif*2,shif*2,3),dtype = 'uint8')
 route = canva
 def draw_pos(inp):
+	global canva,route,mul,shif
 	pos = [inp.pose.pose.position.x-1,inp.pose.pose.position.y+1]
-	pos[0]*=8
-	pos[1]*=8
-	rospy.loginfo([pos[0]-1,pos[1]+1])
-	pos = [-pos[0]*10,pos[1]*10]
-	cv.circle(canva,(int(pos[0])+500,int(pos[1])+500),2,(255,255,0),4)
+	pos[0]*=16
+	pos[1]*=16
+	pos = [-pos[0]*mul,pos[1]*mul]
+	rospy.loginfo([int(pos[0]+shif),int(pos[1])+shif])
+	cv.circle(canva,(int(pos[0])+shif,int(pos[1])+shif),2,(255,255,0),4)
 	return
 
 def draw_bar(inp):
+	global route,canva,mul,shif
 	for i in range(0,len(inp.data),2):
-		pp = (int(inp.data[i]*10)+500,int(inp.data[i+1]*10)+500)
-		if pp[0]<1000 and pp[1]<1000 and pp[0]>=0 and pp[1]>=0:
+		pp = (int(inp.data[i]*mul)+shif,int(inp.data[i+1]*mul)+shif)
+		rospy.loginfo(pp)
+		if pp[0]<shif*2 and pp[1]<shif*2 and pp[0]>=0 and pp[1]>=0:
 			cv.circle(route,pp,2,(255,0,255),4)
 	cv.imshow('position map',route+canva)
 	cv.waitKey(10)
