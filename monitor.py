@@ -105,7 +105,11 @@ def findpink(img):
 	# y1,x1 = x1,y1
 	# y2,x2 = x2,y2
 	e2 = [(x2[1]-x1[1])/float(x2[0]-x1[0]),-1,-x2[1]+x2[0]*float(x2[1]-x1[1])/(x2[0]-x1[0])]
-	O = solve_eq(e1,e2)
+        e3 = [(z2[1]-z1[1])/float(z2[0]-z1[0]),-1,-z2[1]+z2[0]*float(z2[1]-z1[1])/(z2[0]-z1[0])]
+        ta = solve_eq(e1,e2)
+        tb = solve_eq(e2,e3)
+        tc = solve_eq(e1,e3)
+        O = [(ta[0]+tb[0]+tc[0])/3,(ta[1]+tb[1]+tc[1])/3]
 	# cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
 	for i in range(len(O)):
 		O[i] = int(O[i])
@@ -142,14 +146,14 @@ def findpink(img):
 
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
-	# cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
+	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
 	rospy.loginfo(str(x110)+','+str(y110))
-	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(O,x1))
+	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(x2,x1))
 	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
 	oxline = find_line([x110,y110],y1)
-	oyline = find_line(O,x1)
-	cv.line(mask,(int(x110),int(y110)),(int(oxline[2]/oxline[0]),0),(255,255,0),2)
-	cv.line(mask,(x1[0],x1[1]),(int(oyline[2]/oyline[0]),0),(255,255,0),2)
+	oyline = find_line(x2,x1)
+	# cv.line(mask,(int(x110),int(y110)),(int(oxline[2]/oxline[0]),0),(255,255,0),2)
+	# cv.line(mask,(x2[0],x2[1]),(int(oyline[2]/oyline[0]),0),(255,255,0),2)
 	# cv.line(mask,(O[0],O[1]),((O[0]-O[1]*(O[1]-x1[1])/(O[0]-x1[0])*O[1]),0),(255,255,0),3)
 	rospy.loginfo(int(oxline[2]/oxline[0]))
 	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
@@ -193,7 +197,7 @@ def cmpp(inp):
 	coords = []
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
-		if cv.contourArea(c)<125:
+		if cv.contourArea(c)<50:
 			continue
 		if y+h<disappearing_point[1]:
 			continue
@@ -204,8 +208,8 @@ def cmpp(inp):
 		coords[-2] = (kk[0])
 		coords[-1] = (kk[1])
 		out = pre
-	for i in range(0,len(coords),2):
-		cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
+	# for i in range(0,len(coords),2):
+	# 	cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
 	rospy.loginfo(coords)
 	sendcoord(coords)
 	# getpoint()
