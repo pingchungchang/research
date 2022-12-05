@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import math
+
 barfile = open('/home/pcc/barpos.txt','r')
 movfile = open('/home/pcc/movpos.txt','r')
 
