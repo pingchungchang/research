@@ -79,6 +79,19 @@ def findpink(img):
 		# cv.circle(mask,(cX,cY),2,(255,255,255),2)
 	# centers.remove([0,0])
 	# centers.remove([0,0])
+	out = open('init.txt','r')
+	centers = out.read().split(' ')
+	for i in range(len(centers)):
+		centers[i] = centers[i].split(',')
+		for j in range(len(centers[i])):
+			centers[i][j] = int(centers[i][j])
+	rospy.loginfo(centers)
+	# for i in centers:
+	# 	for j in range(len(i)):
+	# 		if j != 0:
+	# 			out.write(',')
+	# 		out.write(str(i[j]))
+	# 	out.write(' ')
 	centers.sort()
 	y2 = centers[0]
 	centers.pop(0)
@@ -182,10 +195,42 @@ def cmpp(inp):
 	# return
 	bridge = CvBridge()
 	img = bridge.imgmsg_to_cv2(inp,'bgr8')
-	# rospy.loginfo("A: "+str(type(now)))
-	# rospy.loginfo(type(pre))
 	pre = now
 	now = img
+
+	# rospy.loginfo("A: "+str(type(now)))
+	# rospy.loginfo(type(pre))
+	hsv = cv.cvtColor(img,cv.COLOR_BGR2HSV)
+	dark_yellow = np.array([50,255,255])
+	light_yellow = np.array([25,55,55])
+	mask = cv.inRange(hsv,light_yellow,dark_yellow)
+	yellows = cv.findContours(mask,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+	yellows = imutils.grab_contours(yellows)
+	smallest = [-1,-1]
+	for i in yellows:
+		(x,y,w,h) = cv.boundingRect(i)
+		if(y+h>smallest[1]):
+			smallest = [int(x+w/2),y+h]
+	coords = getpoint(smallest,0,1)
+	out = pre
+	cv.circle(out,(int(smallest[0]),int(smallest[1])),2,(255,255,100),4)
+	# for i in range(0,len(coords),2):
+	# 	cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
+	rospy.loginfo(coords)
+	sendcoord(coords)
+	# getpoint()
+	# cv.imshow('tmp',route)
+	rospy.loginfo(smallest)
+	cv.circle(out,(int(disappearing_point[0]),int(disappearing_point[1])),2,(0,255,0),4)
+	cv.imshow('now',out)
+	cv.waitKey(10)
+	return
+'''
+  <param name="movingbot2" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/movingbot.urdf.xacro" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_movingbot2" args="-urdf -model movingbot2 -x 9 -y -1.5 -z 1.0 -param movingbot2" />
+'''
+'''
+# add after cmpp:pre = now now = img
 	# return
 	diff = cv.absdiff(pre,now)
 	gray = cv.cvtColor(diff,cv.COLOR_BGR2GRAY)
@@ -195,6 +240,7 @@ def cmpp(inp):
 	_,contours,_ = cv.findContours(dilated,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
 	out = pre
 	coords = []
+
 	for c in contours:
 		(x,y,w,h) = cv.boundingRect(c)
 		if cv.contourArea(c)<50:
@@ -208,21 +254,8 @@ def cmpp(inp):
 		coords[-2] = (kk[0])
 		coords[-1] = (kk[1])
 		out = pre
-	# for i in range(0,len(coords),2):
-	# 	cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
-	rospy.loginfo(coords)
-	sendcoord(coords)
-	# getpoint()
-	# cv.imshow('tmp',route)
-	cv.circle(out,(int(disappearing_point[0]),int(disappearing_point[1])),2,(0,255,0),4)
-	cv.imshow('now',out)
-	cv.waitKey(10)
-	pre = now
-	return
 '''
-  <param name="movingbot2" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/movingbot.urdf.xacro" />
-  <node pkg="gazebo_ros" type="spawn_model" name="spawn_movingbot2" args="-urdf -model movingbot2 -x 9 -y -1.5 -z 1.0 -param movingbot2" />
-'''
+
 def fil(inp):
 	global flag,pre,now
 	if flag == False:
