@@ -3,6 +3,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import math
+lim = 5
 inp  = open('/home/pcc/coords.txt','r')
 inp = inp.read().split(',')
 inp.pop()
@@ -30,7 +31,7 @@ for i in range(len(inp)):
 # fig.colorbar(surf,shrink=7,aspect=5,pad=1)
 for i in inp:
     # print(float(i[2])/big)
-    ccc = (min(float(i[2]/10),1),0,0)
+    ccc = (min(float(i[2]/lim),1),0,0)
     # ccc = (min(float(i[2])/10.0,1),i[2]/big/2,0)
     # ccc = (float(float(i[2])/10.0),0)
     ax.scatter(float(i[0]),float(i[1]),float(i[2]),c=ccc)

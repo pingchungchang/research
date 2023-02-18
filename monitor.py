@@ -38,7 +38,10 @@ def sendcoord(inp):
 	msg = Float64MultiArray()
 	msg.data = inp
 	pub.publish(msg)
-
+def banana(a1,a2,b1,b2):
+	tmp = np.array([[a2[0]-a1[0],b2[0]-b1[0]],[a2[1]-a1[1],b2[1]-b1[1]]])
+	tt = np.matmul(np.linalg.inv(tmp),np.array([[b2[0]-a2[0]],[b2[1]-a2[1]]]))
+	return [a2[0]+tt[0][0]*(a2[0]-a1[0]),a2[1]+tt[0][0]*(a2[1]-a1[1])]
 def solve_eq(eq1,eq2):
 	# rospy.loginfo(eq1)
 	# rospy.loginfo(eq2)
@@ -81,17 +84,25 @@ def findpink(img):
 	# centers.remove([0,0])
 	out = open('init.txt','r')
 	centers = out.read().split(' ')
+	rospy.loginfo(centers)
 	for i in range(len(centers)):
 		centers[i] = centers[i].split(',')
+		rospy.loginfo(str(len(centers[i]))+":"+str(centers[i]))
+		if len(centers[i]) != 2:
+			centers.pop(i)
+			i = 0
 		for j in range(len(centers[i])):
 			centers[i][j] = int(centers[i][j])
 	rospy.loginfo(centers)
+
+	# out = open('init.txt','w')
 	# for i in centers:
 	# 	for j in range(len(i)):
 	# 		if j != 0:
 	# 			out.write(',')
 	# 		out.write(str(i[j]))
 	# 	out.write(' ')
+	
 	centers.sort()
 	y2 = centers[0]
 	centers.pop(0)
@@ -114,21 +125,18 @@ def findpink(img):
 	# rospy.loginfo(centers)
 	# for i in centers:
 		# rospy.loginfo(len(i))
-	e1 = [(y2[1]-y1[1])/float(y2[0]-y1[0]),-1,-y2[1]+y2[0]*float(y2[1]-y1[1])/(y2[0]-y1[0])]
-	# y1,x1 = x1,y1
-	# y2,x2 = x2,y2
-	e2 = [(x2[1]-x1[1])/float(x2[0]-x1[0]),-1,-x2[1]+x2[0]*float(x2[1]-x1[1])/(x2[0]-x1[0])]
-        e3 = [(z2[1]-z1[1])/float(z2[0]-z1[0]),-1,-z2[1]+z2[0]*float(z2[1]-z1[1])/(z2[0]-z1[0])]
-        ta = solve_eq(e1,e2)
-        tb = solve_eq(e2,e3)
-        tc = solve_eq(e1,e3)
-        O = [(ta[0]+tb[0]+tc[0])/3,(ta[1]+tb[1]+tc[1])/3]
+	# cv.circle(mask,(z2[0],z2[1]),2,(255,255,255),9)
+	rospy.loginfo(z1)
+	rospy.loginfo(z2)
+	ta = banana(x1,x2,y1,y2)
+	tb = banana(x1,x2,z1,z2)
+	tc = banana(y1,y2,z1,z2)
+	O = [(ta[0]+tb[0]+tc[0])/3,(ta[1]+tb[1]+tc[1])/3]
 	# cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
 	for i in range(len(O)):
 		O[i] = int(O[i])
 	# rospy.loginfo(O)
 	# cv.line(mask,(y2[0],y2[1]),(O[0],O[1]),(255,255,255),4)
-	# cv.circle(mask,(x1[0],x1[1]),2,(255,255,255),9)
 	
 	m1 = [[O[0],x1[0],y1[0],z1[0]],[O[1],x1[1],y1[1],z1[1]],[1,1,1,1]]
 	m1 = np.array(m1)
@@ -160,23 +168,25 @@ def findpink(img):
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
 	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
-	rospy.loginfo(str(x110)+','+str(y110))
-	disappearing_point = solve_eq(find_line(y1,[x110,y110]),find_line(x2,x1))
+	# rospy.loginfo(str(x110)+','+str(y110))
+	disappearing_point = banana([x110,y110],y1,O,x2)
+	cv.line(mask,(int(x110),int(y110)),(y1[0],y1[1]),(255,255,255),3)
+	# solve_eq(find_line(y1,[x110,y110]),find_line(x2,x1))
+	rospy.loginfo("disappearing_point position:"+str(disappearing_point[0])+" "+str(disappearing_point[1]))
 	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
-	oxline = find_line([x110,y110],y1)
-	oyline = find_line(x2,x1)
-	# cv.line(mask,(int(x110),int(y110)),(int(oxline[2]/oxline[0]),0),(255,255,0),2)
-	# cv.line(mask,(x2[0],x2[1]),(int(oyline[2]/oyline[0]),0),(255,255,0),2)
+	# cv.line(mask,(y2[0],y2[1]),(int(O[0]),int(O[1])),(255,255,255),2)
+	# cv.line(mask,(z2[0],z2[1]),(int(O[0]),int(O[1])),(255,255,0),2)
+	# cv.line(mask,(x2[0],x2[1]),(int(O[0]),int(O[1])),(255,255,0),2)
 	# cv.line(mask,(O[0],O[1]),((O[0]-O[1]*(O[1]-x1[1])/(O[0]-x1[0])*O[1]),0),(255,255,0),3)
-	rospy.loginfo(int(oxline[2]/oxline[0]))
 	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
-	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,255),4)
+	cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),4)
+	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,0),4)
 	# cv.circle(mask,(int(disappearing_point[0]),int(1)),2,(255,255,255),4)
 
+	rospy.loginfo('done')
+	rospy.loginfo(ks)
 	cv.imshow('testing',mask)
 	cv.waitKey(2)
-	rospy.loginfo('done')
-	rospy.loginfo(ks)	
 	return
 
 def initial(inp):
