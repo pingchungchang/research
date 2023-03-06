@@ -79,7 +79,7 @@ def findpink(img):
 		cY = int(MM["m01"]/(MM['m00']+0.00001))
 		if([cX,cY] != [0,0]):
 			centers.append([cX,cY])
-		# cv.circle(mask,(cX,cY),2,(255,255,255),2)
+		cv.circle(mask,(cX,cY),2,(255,255,255),2)
 	# centers.remove([0,0])
 	# centers.remove([0,0])
 	out = open('init.txt','r')
@@ -167,7 +167,7 @@ def findpink(img):
 
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
-	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5)
+	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),10)
 	# rospy.loginfo(str(x110)+','+str(y110))
 	disappearing_point = banana([x110,y110],y1,O,x2)
 	cv.line(mask,(int(x110),int(y110)),(y1[0],y1[1]),(255,255,255),3)
