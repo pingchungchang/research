@@ -1,0 +1,5 @@
+zline pos for 052060 to 052200:1.5,-1
+origin pos for 052060 to 052200:-0.7,-1.25
+
+
+monitor pos for 039200:-1.25,-1.25
