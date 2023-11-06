@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import math
 lim = 5
+
 inp  = open('/home/pcc/coords.txt','r')
 inp = inp.read().split(',')
 inp.pop()

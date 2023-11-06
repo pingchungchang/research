@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import math
 barfile = open('/home/pcc/barpos.txt','r')
 movfile = open('/home/pcc/movpos.txt','r')
+out  = open('/home/pcc/coords.txt','w')
 
 bars = barfile.read().split(' ')
 mov = movfile.read().split(' ')
@@ -21,10 +22,12 @@ for i in bars:
     dictionary[i[2]] = [i[0],i[1]]
 for i in mov:
     if type(dictionary.get(i[2],-1.0)) != float:
-        tmp = dictionary.get(i[2])
-        dict2[i[2]] = abs(tmp[1]-i[1])
-        dictionary[i[2]] = abs(tmp[0]-i[0])
-        #dictionary[i[2]] = math.sqrt(abs(tmp[0]-i[0])**2+abs(tmp[1]-i[1])**2)
+		tmp = dictionary.get(i[2])
+		dict2[i[2]] = abs(tmp[1]-i[1])
+		dictionary[i[2]] = abs(tmp[0]-i[0])
+		out.write(str(i[0])+' '+str(i[1])+' '+str(math.sqrt((tmp[0]-i[0])**2+(tmp[1]-i[1])**2))+',')
+		dictionary[i[2]] = math.sqrt(abs(tmp[0]-i[0])**2+abs(tmp[1]-i[1])**2)
+
 x = []
 y = []
 y2 = []

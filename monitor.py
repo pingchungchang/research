@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import math
 import rospy
 from nav_msgs.msg import *
 from std_msgs.msg import *
@@ -12,6 +13,7 @@ import imutils
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge,CvBridgeError
 from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import String
 flag = False
 
 
@@ -31,9 +33,16 @@ ks = []
 disappearing_point = []
 monitor_pos = []
 pub = rospy.Publisher('barrier_coords',Float64MultiArray)
+pub2=0
+
+def distance(a,b):
+	return math.sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]))
 
 def sendcoord(inp):
-	global pub
+	global pub,pub2,monitor_pos
+	msg2 = String()
+	msg2 = str(sys.argv[1])+','+str(inp[0])+','+str(inp[1])+','+str(monitor_pos[0])+','+str(monitor_pos[1])+','+str(monitor_pos[2])
+	pub2.publish(msg2)
 	msg = Float64MultiArray()
 	msg.data = inp
 	pub.publish(msg)
@@ -107,13 +116,19 @@ def findpink(img):
 	centers.pop(0)
 	y1 = centers[0]
 	centers.pop(0)
-	# cv.circle(mask,(int(y1[0]),int(y1[1])),5,(255,255,255),5)
-	cv.circle(mask,(int(y2[0]),int(y2[1])),5,(255,255,255),5)
+	if distance(y1,z1) > distance(y2,z1):
+		y3 = y1;
+		y1 = y2;
+		y2 = y3;
 	centers.sort(reverse = True)
-	x2 = [centers[0][1],centers[0][0]]
+	x2 = [centers[0][0],centers[0][1]]
 	centers.pop(0)
-	x1 = [centers[0][1],centers[0][0]]
+	x1 = [centers[0][0],centers[0][1]]
 	centers.pop(0)
+	if distance(x1,z1) > distance(x2,z1):
+		x3 = x1
+		x1 = x2
+		x2 = x3
 	ta = banana(x1,x2,y1,y2)
 	tb = banana(x1,x2,z1,z2)
 	tc = banana(y1,y2,z1,z2)
@@ -148,7 +163,8 @@ def findpink(img):
 
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
-	disappearing_point = banana([x110,y110],y1,O,x2)
+	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),5);
+	disappearing_point = banana([x110,y110],x1,O,y2)
 	rospy.loginfo("disappearing_point position:"+str(disappearing_point[0])+" "+str(disappearing_point[1]))
 	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
 	cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),4)
@@ -192,6 +208,9 @@ def cmpp(inp):
 	cv.circle(out,(int(smallest[0]),int(smallest[1])),2,(255,255,100),4)
 	sendcoord(coords)
 	cv.circle(out,(int(disappearing_point[0]),int(disappearing_point[1])),2,(0,255,0),4)
+	cv.circle(out,(int(x1[0]),int(x1[1])),2,(0,0,255),4);
+	cv.circle(out,(int(y1[0]),int(y1[1])),2,(0,0,255),4);
+	cv.circle(out,(int(z1[0]),int(z1[1])),2,(0,0,255),4);
 	cv.imshow('now',out)
 	cv.waitKey(10)
 	return
@@ -239,8 +258,9 @@ def fil(inp):
 
 
 if __name__ == '__main__':
-	global pub
+	global pub,pub2
 	pub = rospy.Publisher(str(sys.argv[1])+'barrier_coords',Float64MultiArray)
+	pub2 = rospy.Publisher(str(sys.argv[1])+'for_comb',String)
 	flag = False
 	rospy.init_node('monitor1',anonymous = True)
 	rospy.Subscriber(str(sys.argv[1])+'/image',Image,fil,queue_size = 100)
