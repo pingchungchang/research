@@ -31,10 +31,9 @@ ks = []
 disappearing_point = []
 monitor_pos = []
 pub = rospy.Publisher('barrier_coords',Float64MultiArray)
+
 def sendcoord(inp):
 	global pub
-	# global ks
-	# rospy.loginfo(ks)
 	msg = Float64MultiArray()
 	msg.data = inp
 	pub.publish(msg)
@@ -43,11 +42,8 @@ def banana(a1,a2,b1,b2):
 	tt = np.matmul(np.linalg.inv(tmp),np.array([[b2[0]-a2[0]],[b2[1]-a2[1]]]))
 	return [a2[0]+tt[0][0]*(a2[0]-a1[0]),a2[1]+tt[0][0]*(a2[1]-a1[1])]
 def solve_eq(eq1,eq2):
-	# rospy.loginfo(eq1)
-	# rospy.loginfo(eq2)
 	tmp = np.array([[eq1[0],eq1[1]],[eq2[0],eq2[1]]])
 	tt = np.matmul(np.linalg.inv(tmp) , np.array([[eq1[2]],[eq2[2]]]))
-	# rospy.loginfo(tt)
 	return [tt[0][0],tt[1][0]]
 def getpoint(I,p1,p2):
 	global M,ks
@@ -74,69 +70,56 @@ def findpink(img):
 	centers = []
 	for c in pinks:
 		MM = cv.moments(c)
-		# rospy.loginfo(M["m00"])
 		cX = int(MM["m10"]/(MM["m00"]+0.00001))
 		cY = int(MM["m01"]/(MM['m00']+0.00001))
 		if([cX,cY] != [0,0]):
 			centers.append([cX,cY])
-		cv.circle(mask,(cX,cY),2,(255,255,255),2)
-	# centers.remove([0,0])
-	# centers.remove([0,0])
-	out = open('init.txt','r')
-	centers = out.read().split(' ')
 	rospy.loginfo(centers)
 	for i in range(len(centers)):
-		centers[i] = centers[i].split(',')
 		rospy.loginfo(str(len(centers[i]))+":"+str(centers[i]))
 		if len(centers[i]) != 2:
 			centers.pop(i)
 			i = 0
+		else:
+			centers[0] = centers[0]
 		for j in range(len(centers[i])):
 			centers[i][j] = int(centers[i][j])
-	rospy.loginfo(centers)
 
-	# out = open('init.txt','w')
-	# for i in centers:
-	# 	for j in range(len(i)):
-	# 		if j != 0:
-	# 			out.write(',')
-	# 		out.write(str(i[j]))
-	# 	out.write(' ')
-	
+	out = open('init.txt','w')
+	for i in centers:
+		for j in range(len(i)):
+			if j != 0:
+				out.write(',')
+			out.write(str(i[j]))
+		out.write(' ')
+
+	for i in range(len(centers)):
+		centers[i] = [centers[i][1],centers[i][0]]
+	centers.sort()
+	z2 = [centers[0][1],centers[0][0]]
+	centers.pop(0)
+	z1 = [centers[0][1],centers[0][0]]
+	centers.pop(0)
+	for i in range(len(centers)):
+		centers[i] = [centers[i][1],centers[i][0]]
 	centers.sort()
 	y2 = centers[0]
 	centers.pop(0)
 	y1 = centers[0]
 	centers.pop(0)
-	for i in range(len(centers)):
-		centers[i] = [centers[i][1],centers[i][0]]
-	centers.sort()
-	# rospy.loginfo(len(centers))
-	z2 = [centers[0][1],centers[0][0]]
-	centers.pop(0)
-	z1 = [centers[0][1],centers[0][0]]
-	centers.pop(0)
+	# cv.circle(mask,(int(y1[0]),int(y1[1])),5,(255,255,255),5)
+	cv.circle(mask,(int(y2[0]),int(y2[1])),5,(255,255,255),5)
 	centers.sort(reverse = True)
 	x2 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
 	x1 = [centers[0][1],centers[0][0]]
 	centers.pop(0)
-	rospy.loginfo(y2)
-	# rospy.loginfo(centers)
-	# for i in centers:
-		# rospy.loginfo(len(i))
-	# cv.circle(mask,(z2[0],z2[1]),2,(255,255,255),9)
-	rospy.loginfo(z1)
-	rospy.loginfo(z2)
 	ta = banana(x1,x2,y1,y2)
 	tb = banana(x1,x2,z1,z2)
 	tc = banana(y1,y2,z1,z2)
 	O = [(ta[0]+tb[0]+tc[0])/3,(ta[1]+tb[1]+tc[1])/3]
-	# cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),5)
 	for i in range(len(O)):
 		O[i] = int(O[i])
-	# rospy.loginfo(O)
-	# cv.line(mask,(y2[0],y2[1]),(O[0],O[1]),(255,255,255),4)
 	
 	m1 = [[O[0],x1[0],y1[0],z1[0]],[O[1],x1[1],y1[1],z1[1]],[1,1,1,1]]
 	m1 = np.array(m1)
@@ -154,7 +137,6 @@ def findpink(img):
 	ks = [k1,k2,k3]
 	M = m1.dot(np.array([[1,0,0,0],[0,k1,0,0],[0,0,k2,0],[0,0,0,k3]]))
 	M = M.dot(np.array([[-1,-1,-1,1],[1,0,0,0],[0,1,0,0],[0,0,1,0]]))
-	# rospy.loginfo(len(M[0,:]))
 	y_to_xz = y1
 	z_to_xy = z1
 	tmp = getpoint(y_to_xz,0,2)
@@ -163,25 +145,13 @@ def findpink(img):
 	line2 = [[0,0,1],[tmp[0],tmp[1],-1]]
 	k = 1/(line1[1][0]*line2[1][1]/line2[1][0]-line1[1][1])
 	monitor_pos = [1,0,0]+k*line1[1][1]
-	# cv.imshow('testing',mask)
 
 	x110 = (M[0,0]+M[0,3]+M[0,1])/(1-(1-k1)-(1-k2))
 	y110 = (M[1,0]+M[1,3]+M[1,1])/(1-(1-k1)-(1-k2))
-	cv.circle(mask,(int(x110),int(y110)),2,(255,255,255),10)
-	# rospy.loginfo(str(x110)+','+str(y110))
 	disappearing_point = banana([x110,y110],y1,O,x2)
-	cv.line(mask,(int(x110),int(y110)),(y1[0],y1[1]),(255,255,255),3)
-	# solve_eq(find_line(y1,[x110,y110]),find_line(x2,x1))
 	rospy.loginfo("disappearing_point position:"+str(disappearing_point[0])+" "+str(disappearing_point[1]))
 	rospy.loginfo('disappearing point real position:'+str(getpoint([disappearing_point[0],disappearing_point[1]+1],0,1)))
-	# cv.line(mask,(y2[0],y2[1]),(int(O[0]),int(O[1])),(255,255,255),2)
-	# cv.line(mask,(z2[0],z2[1]),(int(O[0]),int(O[1])),(255,255,0),2)
-	# cv.line(mask,(x2[0],x2[1]),(int(O[0]),int(O[1])),(255,255,0),2)
-	# cv.line(mask,(O[0],O[1]),((O[0]-O[1]*(O[1]-x1[1])/(O[0]-x1[0])*O[1]),0),(255,255,0),3)
-	# cv.line(mask,(O[0],O[1]),(x1[0],x1[1]),(255,255,0),3)
 	cv.circle(mask,(int(O[0]),int(O[1])),2,(255,255,255),4)
-	cv.circle(mask,(int(disappearing_point[0]),int(disappearing_point[1])),2,(255,255,0),4)
-	# cv.circle(mask,(int(disappearing_point[0]),int(1)),2,(255,255,255),4)
 
 	rospy.loginfo('done')
 	rospy.loginfo(ks)
@@ -197,19 +167,15 @@ def initial(inp):
 		findpink(img)
 		now = img
 		pre = img
-		# rospy.loginfo(type(now))
 	except CvBridgeError:
 		rospy.loginfo('error')
 def cmpp(inp):
 	global pre,now,ks,route,disappearing_point
-	# return
 	bridge = CvBridge()
 	img = bridge.imgmsg_to_cv2(inp,'bgr8')
 	pre = now
 	now = img
 
-	# rospy.loginfo("A: "+str(type(now)))
-	# rospy.loginfo(type(pre))
 	hsv = cv.cvtColor(img,cv.COLOR_BGR2HSV)
 	dark_yellow = np.array([50,255,255])
 	light_yellow = np.array([25,55,55])
@@ -224,13 +190,7 @@ def cmpp(inp):
 	coords = getpoint(smallest,0,1)
 	out = pre
 	cv.circle(out,(int(smallest[0]),int(smallest[1])),2,(255,255,100),4)
-	# for i in range(0,len(coords),2):
-	# 	cv.circle(route,(int(coords[i]*10)+500,int(coords[i+1]*10)+500),2,(255,255,255),5)
-	rospy.loginfo(coords)
 	sendcoord(coords)
-	# getpoint()
-	# cv.imshow('tmp',route)
-	rospy.loginfo(smallest)
 	cv.circle(out,(int(disappearing_point[0]),int(disappearing_point[1])),2,(0,255,0),4)
 	cv.imshow('now',out)
 	cv.waitKey(10)
@@ -279,9 +239,11 @@ def fil(inp):
 
 
 if __name__ == '__main__':
+	global pub
+	pub = rospy.Publisher(str(sys.argv[1])+'barrier_coords',Float64MultiArray)
 	flag = False
 	rospy.init_node('monitor1',anonymous = True)
-	rospy.Subscriber('/monitor/image',Image,fil,queue_size = 100)
+	rospy.Subscriber(str(sys.argv[1])+'/image',Image,fil,queue_size = 100)
 	rate = rospy.Rate(100)
 	while not rospy.is_shutdown():
 		rate.sleep()
